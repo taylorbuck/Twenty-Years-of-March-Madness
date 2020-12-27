@@ -1,0 +1,65 @@
+---
+title: "20 Yrs of March Madness"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+#Libraries
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(writexl)
+```
+
+```{r}
+#Downloading data
+mmdata <- read.csv("NCAA Mens March Madness Historical Results.csv")
+
+#Keeping only national championship games, removing columns I don't need
+ntlcgame <- mmdata %>%
+  filter(Round == "National Championship") %>%
+  select(-c(Region, Winning.Seed, Losing.Seed, Overtime))
+
+#Manually adding years since 2016
+ntlc2017 <- data.frame(Date = "4/3/17", Round = "National Championship", Winner = "North Carolina", Winning.Score = 71, Loser = "Gonzaga", Losing.Score = 65)
+
+ntlc2018 <- data.frame(Date = "4/2/18", Round = "National Championship", Winner = "Villanova", Winning.Score = 79, Loser = "Michigan", Losing.Score = 62)
+
+ntlc2019 <- data.frame(Date = "4/8/19", Round = "National Championship", Winner = "Virginia", Winning.Score = 85, Loser = "Texas Tech", Losing.Score = 77)
+
+missingyears <- rbind(ntlc2017, ntlc2018, ntlc2019)
+missingyears$Winning.Score <- as.integer(as.numeric(missingyears$Winning.Score))
+missingyears$Losing.Score <- as.integer(as.numeric(missingyears$Losing.Score))
+str(missingyears)
+
+ntlcgame <- rbind(ntlcgame, missingyears)
+str(ntlcgame)
+
+#Fixing date format, keeping only the year
+ntlcgame$Date <- mdy(ntlcgame$Date)
+str(ntlcgame)
+
+ntlcgame$Date <- substr(ntlcgame$Date, start = 1, stop = 4)
+
+#Adding a score column
+ntlcgame <- ntlcgame %>%
+  mutate(Score = paste(ntlcgame$Winning.Score,"-",ntlcgame$Losing.Score))
+
+#Saving data
+getwd()
+write_xlsx(ntlcgame, "/Users/taylorbuck/Desktop/mmdata.xlsx")
+```
+
+```{r}
+#How many teams do we have in the last 20 years?
+ntlcgame20 <- ntlcgame %>%
+  filter(Date >= 2000)
+
+ntlcgame20 %>%
+  group_by(Winner) %>%
+  summarise(total = n()) %>%
+  arrange(desc(total))
+```
